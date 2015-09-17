@@ -21,21 +21,21 @@ typedef RwInt32 RwBool;
 #define INVALID ((void*)0xFFFFFFFF)
 
 IDirect3DDevice9 *d3d9device = NULL;
-RwUInt32 &LastPixelShader = *AddressByVersion<RwUInt32*>(0x619478, 0x6DDE2C);
-RwUInt32 &Last8VertexShader = *AddressByVersion<RwUInt32*>(0x619474, 0x6DDE28);
+RwUInt32 &LastPixelShader = *AddressByVersion<RwUInt32*>(0x619478, 0x618B40, 0x6DDE2C);
+RwUInt32 &Last8VertexShader = *AddressByVersion<RwUInt32*>(0x619474, 0x618B3C, 0x6DDE28);
 void *Last9VertexShader = INVALID;
 RwUInt32 LastFVF = 0xFFFFFFFF;
 void *LastVertexDecl = INVALID;
 
-IUnknown *&RwD3DDevice = *AddressByVersion<IUnknown**>(0x662EF0, 0x7897A8);
+IUnknown *&RwD3DDevice = *AddressByVersion<IUnknown**>(0x662EF0, 0x662EF0, 0x7897A8);
 
-static uint32_t D3D8DeviceSystemStart_A = AddressByVersion<uint32_t>(0x5B7A50, 0x65BFC0); 
-static uint32_t RwD3D8GetCurrentD3DDevice_A = AddressByVersion<uint32_t>(0x5BA590, 0x65F140); 
+static uint32_t D3D8DeviceSystemStart_A = AddressByVersion<uint32_t>(0x5B7A50, 0x5B7D10, 0x5BC470, 0x65BFC0); 
+static uint32_t RwD3D8GetCurrentD3DDevice_A = AddressByVersion<uint32_t>(0x5BA590, 0x5BA850, 0x65F140); 
 WRAPPER int D3D8DeviceSystemStart(void) { VARJMP(D3D8DeviceSystemStart_A); }
 WRAPPER void *RwD3D8GetCurrentD3DDevice(void) { VARJMP(RwD3D8GetCurrentD3DDevice_A); }
 
 // invalidate d3d9 cache when d3d8 shader changes
-static uint32_t setshaderhook_R = AddressByVersion<uint32_t>(0x5BAF9A, 0x65F2FA); 
+static uint32_t setshaderhook_R = AddressByVersion<uint32_t>(0x5BAF9A, 0x5BB25A, 0x65F2FA); 
 void __declspec(naked)
 setshaderhook(void)
 {
@@ -64,7 +64,7 @@ D3D8DeviceSystemStart_hook(void)
 BOOL
 d3d9attach(void)
 {
-	MemoryVP::InjectHook(AddressByVersion<uint32_t>(0x5B76B0, 0x65BB1F), D3D8DeviceSystemStart_hook);
+	MemoryVP::InjectHook(AddressByVersion<uint32_t>(0x5B76B0, 0x5B7970, 0x65BB1F), D3D8DeviceSystemStart_hook);
 	if(RwD3DDevice)
 		RwD3DDevice->QueryInterface(IID_IDirect3DDevice9, (void**)&d3d9device);
 
@@ -178,8 +178,11 @@ RwD3D9SetVertexPixelShaderConstant(RwUInt32 registerAddress, const void *constan
 BOOL WINAPI
 DllMain(HINSTANCE hInst, DWORD reason, LPVOID)
 {
-	if(reason == DLL_PROCESS_ATTACH)
-		return d3d9attach();
+	if(reason == DLL_PROCESS_ATTACH){
+		AddressByVersion<uint32_t>(0, 0, 0);
+		if(gtaversion == III_10 || gtaversion == III_11 || gtaversion == VC_10)
+			return d3d9attach();
+	}
 
 	return TRUE;
 }
