@@ -21,24 +21,81 @@ typedef RwInt32 RwBool;
 #define INVALID ((void*)0xFFFFFFFF)
 
 IDirect3DDevice9 *d3d9device = NULL;
-RwUInt32 &LastPixelShader = *AddressByVersion<RwUInt32*>(0x619478, 0x618B40, 0x6DDE2C);
-RwUInt32 &Last8VertexShader = *AddressByVersion<RwUInt32*>(0x619474, 0x618B3C, 0x6DDE28);
+RwUInt32 &LastPixelShader = *AddressByVersion<RwUInt32*>(0x619478, 0x618B40, 0x625ACC, 0x6DDE2C, 0x6DDE1C, 0x6DCDC4);
+RwUInt32 &Last8VertexShader = *AddressByVersion<RwUInt32*>(0x619474, 0x618B3C, 0x625AD0, 0x6DDE28, 0x6DDE18, 0x6DCDC0);
 void *Last9VertexShader = INVALID;
 RwUInt32 LastFVF = 0xFFFFFFFF;
 void *LastVertexDecl = INVALID;
 
-IUnknown *&RwD3DDevice = *AddressByVersion<IUnknown**>(0x662EF0, 0x662EF0, 0x7897A8);
+IUnknown *&RwD3DDevice = *AddressByVersion<IUnknown**>(0x662EF0, 0x662EF0, 0x67342C, 0x7897A8, 0x7897B0, 0x7887B0);
 
-static uint32_t D3D8DeviceSystemStart_A = AddressByVersion<uint32_t>(0x5B7A50, 0x5B7D10, 0x5BC470, 0x65BFC0); 
-static uint32_t RwD3D8GetCurrentD3DDevice_A = AddressByVersion<uint32_t>(0x5BA590, 0x5BA850, 0x65F140); 
+static uint32_t D3D8DeviceSystemStart_A = AddressByVersion<uint32_t>(0x5B7A50, 0x5B7D10, 0x5BC470, 0x65BFC0, 0x65C010, 0x65AF70); 
+static uint32_t RwD3D8GetCurrentD3DDevice_A = AddressByVersion<uint32_t>(0x5BA590, 0x5BA850, 0, 0x65F140, 0x65F190, 0x65E0F0); 
 WRAPPER int D3D8DeviceSystemStart(void) { VARJMP(D3D8DeviceSystemStart_A); }
-WRAPPER void *RwD3D8GetCurrentD3DDevice(void) { VARJMP(RwD3D8GetCurrentD3DDevice_A); }
+
+// Lazy stuff =P
+void *RwD3D8GetCurrentD3DDevice_Steam()
+{
+	auto v0 = *(DWORD*)0x672F94;
+	*(DWORD*)0x672F8C = 0;
+	if ( *(DWORD*)0x672F94 )
+	{
+		DWORD v1 = 0;
+		/*just*/ do /*it*/
+		{
+			int v2 = *(int *)((char *)*(DWORD*)0x672F98 + v1);
+			v1 += 4;
+			if ( v2 )
+			{
+				(*(void (__cdecl **)(int, int))(*(DWORD*)0x671248 + 324))(v0, v2);
+				*(int *)((char *)0x672F94 + v1) = 0;
+				v0 = *(DWORD*)0x672F94;
+			}
+		}
+		while ( v1 < 0x410 );
+		(*(void (__cdecl **)(int))0x5C69C0)(v0); //sub_5C69C0(v0);
+	}
+	else
+	{
+		*(DWORD*)0x672F94 = (*(int (__cdecl **)(int, int, int))0x5C6710)(64, 15, 16); //sub_5C6710(64, 15, 16);
+		memset((void*)*(DWORD*)0x672F98, 0, 0x410u);
+	}
+	*(DWORD*)0x673398 = (*(int (__cdecl **)(int))(*(DWORD*)0x671248 + 320))(*(DWORD*)0x672F94);
+	memcpy((void*)*(DWORD*)0x673398, (void*)0x62B8E0, 0x40u);
+	return (void *)*(DWORD*)0x673398;
+}
+
+WRAPPER void *RwD3D8GetCurrentD3DDevice(void)
+{
+	if (gtaversion != III_STEAM)
+		VARJMP(RwD3D8GetCurrentD3DDevice_A);
+	__asm
+	{
+		call RwD3D8GetCurrentD3DDevice_Steam
+		retn
+	}
+}
 
 // invalidate d3d9 cache when d3d8 shader changes
-static uint32_t setshaderhook_R = AddressByVersion<uint32_t>(0x5BAF9A, 0x5BB25A, 0x65F2FA); 
+static uint32_t setshaderhook_R = AddressByVersion<uint32_t>(0x5BAF9A, 0x5BB25A, 0x5BF451, 0x65F2FA, 0x65F34A, 0x65E2AA); 
 void __declspec(naked)
 setshaderhook(void)
 {
+	if (gtaversion == III_STEAM) // 0x5BF449
+	{
+		_asm
+		{
+			mov		Last9VertexShader, 0xFFFFFFFF
+			mov		LastFVF, 0xFFFFFFFF
+			mov		LastVertexDecl, 0xFFFFFFFF
+			mov     eax, Last8VertexShader
+			mov     ebx, [ebp+8]
+			push	setshaderhook_R
+			retn
+		}
+
+	}
+
 	_asm{
 		mov	Last9VertexShader, 0xFFFFFFFF
 		mov	LastFVF, 0xFFFFFFFF
@@ -64,11 +121,14 @@ D3D8DeviceSystemStart_hook(void)
 BOOL
 d3d9attach(void)
 {
-	MemoryVP::InjectHook(AddressByVersion<uint32_t>(0x5B76B0, 0x5B7970, 0x65BB1F), D3D8DeviceSystemStart_hook);
+	MemoryVP::InjectHook(AddressByVersion<uint32_t>(0x5B76B0, 0x5B7970, 0x5BD700, 0x65BB1F, 0x65BB6F, 0x65AACF), D3D8DeviceSystemStart_hook);
 	if(RwD3DDevice)
 		RwD3DDevice->QueryInterface(IID_IDirect3DDevice9, (void**)&d3d9device);
 
-	MemoryVP::InjectHook(setshaderhook_R-5, setshaderhook, PATCH_JUMP);
+	if (gtaversion == III_STEAM)
+		MemoryVP::InjectHook(0x5BF449, setshaderhook, PATCH_JUMP);
+	else
+		MemoryVP::InjectHook(setshaderhook_R-5, setshaderhook, PATCH_JUMP);
 	return TRUE;
 }
 
@@ -179,8 +239,8 @@ BOOL WINAPI
 DllMain(HINSTANCE hInst, DWORD reason, LPVOID)
 {
 	if(reason == DLL_PROCESS_ATTACH){
-		AddressByVersion<uint32_t>(0, 0, 0);
-		if(gtaversion == III_10 || gtaversion == III_11 || gtaversion == VC_10)
+		AddressByVersion<uint32_t>(0, 0, 0, 0, 0, 0);
+		if(gtaversion != -1)
 			return d3d9attach();
 	}
 
