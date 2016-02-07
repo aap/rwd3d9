@@ -33,6 +33,47 @@ static uint32_t D3D8DeviceSystemStart_A = AddressByVersion<uint32_t>(0x5B7A50, 0
 static uint32_t RwD3D8GetCurrentD3DDevice_A = AddressByVersion<uint32_t>(0x5BA590, 0x5BA850, 0, 0x65F140, 0x65F190, 0x65E0F0); 
 WRAPPER int D3D8DeviceSystemStart(void) { VARJMP(D3D8DeviceSystemStart_A); }
 
+
+
+// override Im2d pixel shader
+static uint32_t RwD3D8SetPixelShader_A = AddressByVersion<uint32_t>(0x5BAFD0, 0x5BB290, 0x5BF4A0, 0x65F330, 0x65F380, 0x65E2E0);
+WRAPPER RwBool RwD3D8SetPixelShader(RwUInt32 handle) { VARJMP(RwD3D8SetPixelShader_A); }
+
+static void *overridePS = NULL;
+
+static RwBool
+RwD3D8SetPixelShader_hook(RwUInt32 handle)
+{
+	if(overridePS){
+		RwD3D9SetPixelShader(overridePS);
+		return 1;
+	}
+	return RwD3D8SetPixelShader(handle);
+}
+
+static void
+hookPixelShader(void)
+{
+	if(isVC()){
+		MemoryVP::InjectHook(AddressByVersion<uint32_t>(0, 0, 0, 0x6666B8, 0x666708, 0x665668), RwD3D8SetPixelShader_hook);
+		MemoryVP::InjectHook(AddressByVersion<uint32_t>(0, 0, 0, 0x666928, 0x666978, 0x6658D8), RwD3D8SetPixelShader_hook);
+	}else{
+		if (gtaversion == III_STEAM)
+			MemoryVP::InjectHook(0x5C353A, RwD3D8SetPixelShader_hook);
+		else{
+			MemoryVP::InjectHook(AddressByVersion<uint32_t>(0x5BF9D6, 0x5BFC96, 0, 0, 0, 0), RwD3D8SetPixelShader_hook);
+			MemoryVP::InjectHook(AddressByVersion<uint32_t>(0x5BFBD3, 0x5BFE93, 0, 0, 0, 0), RwD3D8SetPixelShader_hook);
+		}
+	}
+}
+
+void
+RwD3D9SetIm2DPixelShader(void *ps)
+{
+	overridePS = ps;
+}
+
+
 // Lazy stuff =P
 void *RwD3D8GetCurrentD3DDevice_Steam()
 {
@@ -85,9 +126,9 @@ setshaderhook(void)
 	{
 		_asm
 		{
-			mov		Last9VertexShader, 0xFFFFFFFF
-			mov		LastFVF, 0xFFFFFFFF
-			mov		LastVertexDecl, 0xFFFFFFFF
+			mov	Last9VertexShader, 0xFFFFFFFF
+			mov	LastFVF, 0xFFFFFFFF
+			mov	LastVertexDecl, 0xFFFFFFFF
 			mov     eax, Last8VertexShader
 			mov     ebx, [ebp+8]
 			push	setshaderhook_R
@@ -129,6 +170,8 @@ d3d9attach(void)
 		MemoryVP::InjectHook(0x5BF449, setshaderhook, PATCH_JUMP);
 	else
 		MemoryVP::InjectHook(setshaderhook_R-5, setshaderhook, PATCH_JUMP);
+
+	hookPixelShader();
 	return TRUE;
 }
 

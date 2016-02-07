@@ -11,3 +11,4 @@ EXPORTS
 	RwD3D9SetVertexShaderConstant
 	RwD3D9SetPixelShaderConstant
 	RwD3D9SetVertexPixelShaderConstant
+	RwD3D9SetIm2DPixelShader

@@ -59,6 +59,18 @@ inline T AddressByVersion(uint32_t addressIII10, uint32_t addressIII11, uint32_t
 	}
 }
 
+inline bool
+isIII(void)
+{
+	return gtaversion >= III_10 && gtaversion <= III_STEAM;
+}
+
+inline bool
+isVC(void)
+{
+	return gtaversion >= VC_10 && gtaversion <= VC_STEAM;
+}
+
 template<typename AT>
 inline AT DynBaseAddress(AT address)
 {

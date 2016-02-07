@@ -15,6 +15,8 @@ void RwD3D9SetVertexShaderConstant(RwUInt32 registerAddress, const void *constan
 void RwD3D9SetPixelShaderConstant(RwUInt32 registerAddress, const void *constantData, RwUInt32 constantCount);
 void RwD3D9SetVertexPixelShaderConstant(RwUInt32 registerAddress, const void *constantData, RwUInt32 constantCount);
 
+void RwD3D9SetIm2DPixelShader(void *ps);
+
 #ifdef    __cplusplus
 }
 #endif /* __cplusplus */
