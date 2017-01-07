@@ -1,0 +1,14 @@
+LIBRARY	rwd3d9
+EXPORTS
+	RwD3D9Supported
+	RwD3D9GetCurrentD3DDevice
+	RwD3D9CreateVertexShader
+	RwD3D9CreatePixelShader
+	RwD3D9SetVertexShader
+	RwD3D9SetPixelShader
+	RwD3D9SetFVF
+	RwD3D9SetVertexDeclaration
+	RwD3D9SetVertexShaderConstant
+	RwD3D9SetPixelShaderConstant
+	RwD3D9SetVertexPixelShaderConstant
+	RwD3D9SetIm2DPixelShader
